@@ -118,6 +118,21 @@ end
 
 Query stats can be enabled from the dashboard. If you run into issues, [view the guide](Query-Stats.md).
 
+To track query stats over time, run:
+
+```sh
+rails generate pghero:query_stats
+rake db:migrate
+```
+
+And schedule the task below to run every 10 minutes.
+
+```sh
+rake pghero:capture_query_stats # or PgHero.capture_query_stats
+```
+
+After this, a time range selector will appear on the Queries tab.
+
 ## System Stats
 
 CPU usage is available for Amazon RDS.  Add these lines to your application’s Gemfile:

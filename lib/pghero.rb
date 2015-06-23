@@ -1,11 +1,16 @@
 require "pghero/version"
 require "active_record"
 require "pghero/engine" if defined?(Rails)
+require "pghero/tasks"
 
 module PgHero
   # hack for connection
   class Connection < ActiveRecord::Base
     self.abstract_class = true
+  end
+
+  class QueryStats < ActiveRecord::Base
+    self.table_name = "pghero_query_stats"
   end
 
   class << self
@@ -332,6 +337,32 @@ module PgHero
         SQL
       else
         []
+      end
+    end
+
+    def capture_query_stats
+      config["databases"].keys.each do |database|
+        with(database) do
+          now = Time.now
+          query_stats = self.query_stats
+          if query_stats.any? && reset_query_stats
+            values =
+              query_stats.map do |qs|
+                {
+                  database: database,
+                  query: qs["query"],
+                  total_time: qs["total_minutes"].to_f * 60 * 1000,
+                  calls: qs["calls"],
+                  captured_at: now
+                }
+              end
+
+            # TODO single insert statement
+            QueryStats.transaction do
+              QueryStats.create!(values)
+            end
+          end
+        end
       end
     end
 
