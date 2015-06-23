@@ -308,7 +308,8 @@ module PgHero
     end
 
     # http://www.craigkerstiens.com/2013/01/10/more-on-postgres-performance/
-    def query_stats
+    def query_stats(options = {})
+      limit = options[:limit] || 100
       if query_stats_enabled?
         select_all <<-SQL
           WITH query_stats AS (
@@ -334,7 +335,7 @@ module PgHero
             query_stats
           ORDER BY
             total_minutes DESC
-          LIMIT 100
+          LIMIT #{limit.to_i}
         SQL
       else
         []
@@ -413,7 +414,7 @@ module PgHero
       config["databases"].keys.each do |database|
         with(database) do
           now = Time.now
-          query_stats = self.query_stats
+          query_stats = self.query_stats(limit: 1000000)
           if query_stats.any? && reset_query_stats
             values =
               query_stats.map do |qs|
