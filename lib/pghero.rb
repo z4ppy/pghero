@@ -461,6 +461,26 @@ module PgHero
       SQL
     end
 
+    # http://stackoverflow.com/questions/20582500/how-to-check-if-a-table-exists-in-a-given-schema
+    def past_query_stats_enabled?
+      # TODO use schema from config
+      stats_connection.select_all( squish <<-SQL
+        SELECT EXISTS (
+          SELECT
+            1
+          FROM
+            pg_catalog.pg_class c
+          INNER JOIN
+            pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+          WHERE
+            n.nspname = 'public'
+            AND c.relname = 'pghero_query_stats'
+            AND c.relkind = 'r'
+        )
+      SQL
+      ).to_a.first["exists"] == "t"
+    end
+
     def stats_connection
       QueryStats.connection
     end
