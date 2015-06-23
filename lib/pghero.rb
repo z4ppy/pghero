@@ -52,10 +52,6 @@ module PgHero
       config["databases"].keys.first
     end
 
-    def stats_database
-      primary_database
-    end
-
     def current_database
       Thread.current[:pghero_current_database] ||= primary_database
     end
@@ -345,58 +341,6 @@ module PgHero
       end
     end
 
-    def capture_query_stats
-      config["databases"].keys.each do |database|
-        with(database) do
-          now = Time.now
-          query_stats = self.query_stats
-          if query_stats.any? && reset_query_stats
-            values =
-              query_stats.map do |qs|
-                [
-                  database,
-                  qs["query"],
-                  qs["total_minutes"].to_f * 60 * 1000,
-                  qs["calls"],
-                  now
-                ].map { |v| QueryStats.connection.quote(v) }.join(",")
-              end.map { |v| "(#{v})" }.join(",")
-
-            QueryStats.connection.execute("INSERT INTO pghero_query_stats (database, query, total_time, calls, captured_at) VALUES #{values}")
-          end
-        end
-      end
-    end
-
-    def past_query_stats(options = {})
-      QueryStats.connection.select_all squish <<-SQL
-        WITH query_stats AS (
-          SELECT
-            query,
-            (SUM(total_time) / 1000 / 60) as total_minutes,
-            (SUM(total_time) / SUM(calls)) as average_time,
-            SUM(calls) as calls
-          FROM
-            pghero_query_stats
-          WHERE
-            database = #{connection.quote(current_database)}
-          GROUP BY
-            query
-        )
-        SELECT
-          query,
-          total_minutes,
-          average_time,
-          calls,
-          total_minutes * 100.0 / (SELECT SUM(total_minutes) FROM query_stats) AS total_percent
-        FROM
-          query_stats
-        ORDER BY
-          total_minutes DESC
-        LIMIT 100
-      SQL
-    end
-
     def slow_queries
       if query_stats_enabled?
         select_all <<-SQL
@@ -463,6 +407,62 @@ module PgHero
       else
         false
       end
+    end
+
+    def capture_query_stats
+      config["databases"].keys.each do |database|
+        with(database) do
+          now = Time.now
+          query_stats = self.query_stats
+          if query_stats.any? && reset_query_stats
+            values =
+              query_stats.map do |qs|
+                [
+                  database,
+                  qs["query"],
+                  qs["total_minutes"].to_f * 60 * 1000,
+                  qs["calls"],
+                  now
+                ].map { |v| stats_connection.quote(v) }.join(",")
+              end.map { |v| "(#{v})" }.join(",")
+
+            stats_connection.execute("INSERT INTO pghero_query_stats (database, query, total_time, calls, captured_at) VALUES #{values}")
+          end
+        end
+      end
+    end
+
+    def past_query_stats(options = {})
+      stats_connection.select_all squish <<-SQL
+        WITH query_stats AS (
+          SELECT
+            query,
+            (SUM(total_time) / 1000 / 60) as total_minutes,
+            (SUM(total_time) / SUM(calls)) as average_time,
+            SUM(calls) as calls
+          FROM
+            pghero_query_stats
+          WHERE
+            database = #{connection.quote(current_database)}
+          GROUP BY
+            query
+        )
+        SELECT
+          query,
+          total_minutes,
+          average_time,
+          calls,
+          total_minutes * 100.0 / (SELECT SUM(total_minutes) FROM query_stats) AS total_percent
+        FROM
+          query_stats
+        ORDER BY
+          total_minutes DESC
+        LIMIT 100
+      SQL
+    end
+
+    def stats_connection
+      QueryStats.connection
     end
 
     def ssl_used?
