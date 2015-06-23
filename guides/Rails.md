@@ -118,7 +118,7 @@ end
 
 Query stats can be enabled from the dashboard. If you run into issues, [view the guide](Query-Stats.md).
 
-To track query stats over time, run:
+**Experimental:** To track query stats over time, run:
 
 ```sh
 rails generate pghero:query_stats
