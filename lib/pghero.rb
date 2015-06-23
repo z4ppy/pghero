@@ -10,6 +10,7 @@ module PgHero
   end
 
   class QueryStats < ActiveRecord::Base
+    self.abstract_class = true
     self.table_name = "pghero_query_stats"
   end
 
@@ -352,27 +353,23 @@ module PgHero
           if query_stats.any? && reset_query_stats
             values =
               query_stats.map do |qs|
-                {
-                  database: database,
-                  query: qs["query"],
-                  total_time: qs["total_minutes"].to_f * 60 * 1000,
-                  calls: qs["calls"],
-                  captured_at: now
-                }
-              end
+                [
+                  database,
+                  qs["query"],
+                  qs["total_minutes"].to_f * 60 * 1000,
+                  qs["calls"],
+                  now
+                ].map { |v| QueryStats.connection.quote(v) }.join(",")
+              end.map { |v| "(#{v})" }.join(",")
 
-            # TODO single insert statement
-            # QueryStats.establish_connection(database_config(stats_database))
-            QueryStats.transaction do
-              QueryStats.create!(values)
-            end
+            QueryStats.connection.execute("INSERT INTO pghero_query_stats (database, query, total_time, calls, captured_at) VALUES #{values}")
           end
         end
       end
     end
 
     def past_query_stats(options = {})
-      QueryStats.connection.select_all <<-SQL
+      QueryStats.connection.select_all squish <<-SQL
         WITH query_stats AS (
           SELECT
             query,
