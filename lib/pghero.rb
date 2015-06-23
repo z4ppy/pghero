@@ -51,6 +51,10 @@ module PgHero
       config["databases"].keys.first
     end
 
+    def stats_database
+      primary_database
+    end
+
     def current_database
       Thread.current[:pghero_current_database] ||= primary_database
     end
@@ -358,12 +362,44 @@ module PgHero
               end
 
             # TODO single insert statement
+            # QueryStats.establish_connection(database_config(stats_database))
             QueryStats.transaction do
               QueryStats.create!(values)
             end
           end
         end
       end
+    end
+
+    def past_query_stats(options = {})
+      # with(stats_database) do
+        select_all <<-SQL
+          WITH query_stats AS (
+            SELECT
+              query,
+              (SUM(total_time) / 1000 / 60) as total_minutes,
+              (SUM(total_time) / SUM(calls)) as average_time,
+              SUM(calls) as calls
+            FROM
+              pghero_query_stats
+            WHERE
+              database = #{connection.quote(current_database)}
+            GROUP BY
+              query
+          )
+          SELECT
+            query,
+            total_minutes,
+            average_time,
+            calls,
+            total_minutes * 100.0 / (SELECT SUM(total_minutes) FROM query_stats) AS total_percent
+          FROM
+            query_stats
+          ORDER BY
+            total_minutes DESC
+          LIMIT 100
+        SQL
+      # end
     end
 
     def slow_queries

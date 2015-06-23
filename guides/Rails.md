@@ -125,7 +125,7 @@ rails generate pghero:query_stats
 rake db:migrate
 ```
 
-And schedule the task below to run every 10 minutes.
+And schedule the task below to run every 5 minutes.
 
 ```sh
 rake pghero:capture_query_stats # or PgHero.capture_query_stats

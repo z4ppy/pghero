@@ -7,5 +7,7 @@ class <%= migration_class_name %> < ActiveRecord::Migration
       t.integer :calls, limit: 8
       t.timestamp :captured_at
     end
+
+    add_index :pghero_query_stats, [:database, :captured_at]
   end
 end
