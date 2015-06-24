@@ -3,7 +3,7 @@
     <%= button_to "Reset", reset_query_stats_path, class: "btn btn-danger", style: "float: right;" %>
   <% end %>
 
-  <h1>Queries</h1>
+  <h1 style="float: left;">Queries</h1>
 
   <% if @historical_query_stats_enabled %>
     <%= stylesheet_link_tag "https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/6.2.0/jquery.nouislider.min.css" %>
@@ -35,7 +35,7 @@
       }
     </style>
 
-    <div style="padding: 40px;">
+    <div style="padding: 8px 140px 20px 140px;">
       <div id="slider" style="margin-bottom: 20px;"></div>
       <div id="event-end" style="float: right;"></div>
       <div id="event-start" style="min-height: 20px;"></div>
