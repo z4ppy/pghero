@@ -91,7 +91,7 @@
       function setText(selector, val, val2) {
         var d = timeVal(val);
         var o = "";
-        if (roundTime(d).getTime() == roundTime(now2).getTime() && val == val2) {
+        if (d >= date && val == val2) {
           if (selector == "#event-end") {
             o = "Now";
           }
