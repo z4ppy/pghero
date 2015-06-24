@@ -433,7 +433,7 @@ module PgHero
       end
     end
 
-    def past_query_stats(options = {})
+    def historical_query_stats(options = {})
       stats_connection.select_all squish <<-SQL
         WITH query_stats AS (
           SELECT
@@ -463,7 +463,7 @@ module PgHero
     end
 
     # http://stackoverflow.com/questions/20582500/how-to-check-if-a-table-exists-in-a-given-schema
-    def past_query_stats_enabled?
+    def historical_query_stats_enabled?
       # TODO use schema from config
       stats_connection.select_all( squish <<-SQL
         SELECT EXISTS (
