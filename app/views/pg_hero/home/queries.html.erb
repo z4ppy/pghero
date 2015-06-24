@@ -12,8 +12,6 @@
       .noUi-connect {
         box-shadow: none;
         background: #5bc0de;
-        /*background: #d9534f;*/
-        /*background: #5cb85c;*/
       }
 
       .noUi-handle {
@@ -44,7 +42,7 @@
     <script>
       function roundTime(date) {
         var coeff = 1000 * 60 * 5;
-        return new Date(Math.floor(date.getTime() / coeff) * coeff)
+        return new Date(Math.ceil(date.getTime() / coeff) * coeff)
       }
 
       var days = 1;
@@ -98,6 +96,9 @@
             o = "Now";
           }
         } else {
+          if (d > date) {
+            d = date;
+          }
           o = months[d.getMonth()] + " " + d.getDate() + ", " + pad(d.getHours()) + ":" + pad(d.getMinutes());
         }
         $(selector).html(o);
