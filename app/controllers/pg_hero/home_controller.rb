@@ -47,12 +47,24 @@ module PgHero
     def queries
       @title = "Queries"
       @historical_query_stats_enabled = PgHero.historical_query_stats_enabled?
+
       @query_stats =
-        if params[:start_at] || params[:end_at]
+        if @historical_query_stats_enabled
           begin
             @start_at = Time.zone.parse(params[:start_at]) if params[:start_at]
+            @start_at ||= 24.hours.ago
             @end_at = Time.zone.parse(params[:end_at]) if params[:end_at]
-            PgHero.historical_query_stats(start_at: @start_at, end_at: @end_at)
+            query_stats =
+              if @start_at > Time.now && !@end_at
+                # temp hack until TODO below
+                PgHero.query_stats
+              else
+                PgHero.historical_query_stats(start_at: @start_at, end_at: @end_at)
+              end
+            if !@end_at || @end_at >= Time.now
+              # TODO combine historical query stats with current query stats
+            end
+            query_stats
           rescue
             @error = true
             []
