@@ -44,7 +44,7 @@
     <script>
       function roundTime(date) {
         var coeff = 1000 * 60 * 5;
-        return new Date(Math.ceil(date.getTime() / coeff) * coeff)
+        return new Date(Math.floor(date.getTime() / coeff) * coeff)
       }
 
       var days = 1;
@@ -80,8 +80,8 @@
 
       function updateText() {
         var val = $("#slider").val();
-        setText("#event-start", val[0]);
-        setText("#event-end", val[1]);
+        setText("#event-start", val[0], val[1]);
+        setText("#event-end", val[1], val[0]);
       }
 
       function pad(num) {
@@ -90,10 +90,10 @@
 
       var months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-      function setText(selector, val) {
+      function setText(selector, val, val2) {
         var d = timeVal(val);
         var o = "";
-        if (roundTime(d).getTime() == roundTime(now2).getTime()) {
+        if (roundTime(d).getTime() == roundTime(now2).getTime() && val == val2) {
           if (selector == "#event-end") {
             o = "Now";
           }
