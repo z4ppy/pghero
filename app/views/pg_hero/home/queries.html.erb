@@ -123,8 +123,12 @@
           b = {start_at: queryVal(val[0]), end_at: queryVal(val[1])}
           var url = "queries?" + $.param(b);
         }
+
         $("#boom").html("<tr><td colspan=3><p class='text-muted' style='text-align: center; margin-top: 40px;'>...</p></td></tr>").load(url);
-        history.pushState(null, null, url);
+
+        if (history.pushState) {
+          history.pushState(null, null, url);
+        }
       });
       updateText()
     </script>
