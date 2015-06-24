@@ -62,7 +62,7 @@ module PgHero
         end
 
       if request.xhr?
-        render layout: false, partial: "queries_table", locals: {queries: @query_stats}
+        render layout: false, partial: "queries_table", locals: {queries: @query_stats, headers: false}
       end
     end
 

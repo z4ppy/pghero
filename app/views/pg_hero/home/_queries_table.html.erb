@@ -1,12 +1,21 @@
 <table class="table">
-  <thead>
-    <tr>
-      <th style="width: 33.33%;">Total Time</th>
-      <th style="width: 33.33%;">Average Time</th>
-      <th style="width: 33.33%;">Calls</th>
-    </tr>
-  </thead>
-  <tbody>
+  <% unless local_assigns[:headers] == false %>
+    <thead>
+      <tr>
+        <th style="width: 33.33%;">Total Time</th>
+        <th style="width: 33.33%;">Average Time</th>
+        <th style="width: 33.33%;">Calls</th>
+      </tr>
+    </thead>
+  <% end %>
+  <tbody id="boom">
+    <% if queries.empty? %>
+      <tr>
+        <td colspan="3">
+          <p class="text-muted" style="text-align: center; margin-top: 40px;">No data available for this time.</p>
+        </td>
+      </tr>
+    <% end %>
     <% queries.each do |query| %>
       <tr>
         <td>

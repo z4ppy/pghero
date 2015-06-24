@@ -37,15 +37,20 @@
 
     <div style="padding: 40px;">
       <div id="slider" style="margin-bottom: 20px;"></div>
-      <div id="event-end" style="float: right;">6/23 21:35</div>
-      <div id="event-start">6/22 21:35</div>
+      <div id="event-end" style="float: right;"></div>
+      <div id="event-start" style="min-height: 20px;"></div>
     </div>
 
     <script>
-      var coeff = 1000 * 60 * 5;
+      function roundTime(date) {
+        var coeff = 1000 * 60 * 5;
+        return new Date(Math.ceil(date.getTime() / coeff) * coeff)
+      }
+
       var days = 1;
       var date = new Date();
-      var now = new Date(Math.ceil(date.getTime() / coeff) * coeff) - days * 24 * 60 * 60 * 1000;
+      var now2 = roundTime(date);
+      var now = now2 - days * 24 * 60 * 60 * 1000;
       var start = 24 * 12 * days;
       var end = 24 * 12 * days;
 
@@ -87,7 +92,17 @@
 
       function setText(selector, val) {
         var d = timeVal(val);
-        $(selector).html(months[d.getMonth()] + " " + d.getDate() + ", " + pad(d.getHours()) + ":" + pad(d.getMinutes()));
+        var o = "";
+        console.log(d.getTime())
+        console.log(now2.getTime())
+        if (roundTime(d).getTime() == roundTime(now2).getTime()) {
+          if (selector == "#event-end") {
+            o = "Now";
+          }
+        } else {
+          o = months[d.getMonth()] + " " + d.getDate() + ", " + pad(d.getHours()) + ":" + pad(d.getMinutes());
+        }
+        $(selector).html(o);
       }
 
       function timeVal(val) {
@@ -100,7 +115,7 @@
 
       $("#slider").on("slide", function () {
         updateText();
-      }).on("set", function () {
+      }).on("change", function () {
         var val = $("#slider").val();
         if (val[0] == val[1]) {
           var url = "queries";
@@ -108,7 +123,7 @@
           b = {start_at: queryVal(val[0]), end_at: queryVal(val[1])}
           var url = "queries?" + $.param(b);
         }
-        $("#boom").html("<p class='text-muted' style='padding-bottom: 100px; text-align: center;'>Loading...</p>").load(url);
+        $("#boom").html("<tr><td colspan=3><p class='text-muted' style='text-align: center; margin-top: 40px;'>...</p></td></tr>").load(url);
         history.pushState(null, null, url);
       });
       updateText()
@@ -118,10 +133,8 @@
   <% if @query_stats_enabled %>
     <% if @error %>
       <div class="alert alert-danger">Cannot understand start or end time.</div>
-    <% elsif @query_stats.any? %>
-      <div id="boom">
-        <%= render partial: "queries_table", locals: {queries: @query_stats} %>
-      </div>
+    <% elsif @query_stats.any? || @historical_query_stats_enabled %>
+      <%= render partial: "queries_table", locals: {queries: @query_stats} %>
     <% else %>
       <p>Stats are not available yet. Come back soon!</p>
     <% end %>
