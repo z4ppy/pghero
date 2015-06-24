@@ -46,7 +46,20 @@ module PgHero
 
     def queries
       @title = "Queries"
-      @query_stats = PgHero.query_stats
+      @historical_query_stats_enabled = PgHero.historical_query_stats_enabled?
+      @query_stats =
+        if params[:start_at] || params[:end_at]
+          begin
+            start_at = Time.zone.parse(params[:start_at]) if params[:start_at]
+            end_at = Time.zone.parse(params[:end_at]) if params[:end_at]
+            PgHero.historical_query_stats(start_at: start_at, end_at: end_at)
+          rescue
+            @error = true
+            []
+          end
+        else
+          PgHero.query_stats
+        end
     end
 
     def system

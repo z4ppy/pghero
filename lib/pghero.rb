@@ -424,7 +424,7 @@ module PgHero
                   qs["total_minutes"].to_f * 60 * 1000,
                   qs["calls"],
                   now
-                ].map { |v| stats_connection.quote(v) }.join(",")
+                ].map { |v| quote(v) }.join(",")
               end.map { |v| "(#{v})" }.join(",")
 
             stats_connection.execute("INSERT INTO pghero_query_stats (database, query, total_time, calls, captured_at) VALUES #{values}")
@@ -444,7 +444,9 @@ module PgHero
           FROM
             pghero_query_stats
           WHERE
-            database = #{connection.quote(current_database)}
+            database = #{quote(current_database)}
+            #{options[:start_at] ? "AND captured_at >= #{quote(options[:start_at])}" : ""}
+            #{options[:end_at] ? "AND captured_at <= #{quote(options[:end_at])}" : ""}
           GROUP BY
             query
         )
@@ -547,7 +549,7 @@ module PgHero
 
       commands =
         [
-          "CREATE ROLE #{user} LOGIN PASSWORD #{connection.quote(password)}",
+          "CREATE ROLE #{user} LOGIN PASSWORD #{quote(password)}",
           "GRANT CONNECT ON DATABASE #{database} TO #{user}",
           "GRANT USAGE ON SCHEMA #{schema} TO #{user}"
         ]
@@ -691,6 +693,10 @@ module PgHero
     # from ActiveSupport
     def squish(str)
       str.to_s.gsub(/\A[[:space:]]+/, "").gsub(/[[:space:]]+\z/, "").gsub(/[[:space:]]+/, " ")
+    end
+
+    def quote(value)
+      connection.quote(value)
     end
   end
 end

@@ -5,9 +5,15 @@
 
   <h1>Queries</h1>
 
+  <% if @historical_query_stats_enabled %>
+    <p>TODO time range slider</p>
+  <% end %>
+
   <% if @query_stats_enabled %>
     <% if @query_stats.any? %>
       <%= render partial: "queries_table", locals: {queries: @query_stats} %>
+    <% elsif @error %>
+      <div class="alert alert-danger">Cannot understand start or end time.</div>
     <% else %>
       <p>Stats are not available yet. Come back soon!</p>
     <% end %>
