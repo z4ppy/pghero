@@ -93,8 +93,6 @@
       function setText(selector, val) {
         var d = timeVal(val);
         var o = "";
-        console.log(d.getTime())
-        console.log(now2.getTime())
         if (roundTime(d).getTime() == roundTime(now2).getTime()) {
           if (selector == "#event-end") {
             o = "Now";
