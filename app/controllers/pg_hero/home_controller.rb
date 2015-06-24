@@ -50,9 +50,9 @@ module PgHero
       @query_stats =
         if params[:start_at] || params[:end_at]
           begin
-            start_at = Time.zone.parse(params[:start_at]) if params[:start_at]
-            end_at = Time.zone.parse(params[:end_at]) if params[:end_at]
-            PgHero.historical_query_stats(start_at: start_at, end_at: end_at)
+            @start_at = Time.zone.parse(params[:start_at]) if params[:start_at]
+            @end_at = Time.zone.parse(params[:end_at]) if params[:end_at]
+            PgHero.historical_query_stats(start_at: @start_at, end_at: @end_at)
           rescue
             @error = true
             []
@@ -60,6 +60,10 @@ module PgHero
         else
           PgHero.query_stats
         end
+
+      if request.xhr?
+        render layout: false, partial: "queries_table", locals: {queries: @query_stats}
+      end
     end
 
     def system

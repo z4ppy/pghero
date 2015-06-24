@@ -6,14 +6,122 @@
   <h1>Queries</h1>
 
   <% if @historical_query_stats_enabled %>
-    <p>TODO time range slider</p>
+    <%= stylesheet_link_tag "https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/6.2.0/jquery.nouislider.min.css" %>
+    <%= javascript_include_tag "//ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js", "https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/6.2.0/jquery.nouislider.min.js" %>
+    <style>
+      .noUi-connect {
+        box-shadow: none;
+        background: #5bc0de;
+        /*background: #d9534f;*/
+        /*background: #5cb85c;*/
+      }
+
+      .noUi-handle {
+        box-shadow: none;
+      }
+
+      .noUi-target {
+        box-shadow: none;
+        border-color: #eee;
+      }
+
+      .noUi-background {
+        box-shadow: none;
+        background-color: #eee;
+      }
+
+      .noUi-origin {
+        border-radius: 0;
+      }
+    </style>
+
+    <div style="padding: 40px;">
+      <div id="slider" style="margin-bottom: 20px;"></div>
+      <div id="event-end" style="float: right;">6/23 21:35</div>
+      <div id="event-start">6/22 21:35</div>
+    </div>
+
+    <script>
+      var coeff = 1000 * 60 * 5;
+      var days = 1;
+      var date = new Date();
+      var now = new Date(Math.ceil(date.getTime() / coeff) * coeff) - days * 24 * 60 * 60 * 1000;
+      var start = 24 * 12 * days;
+      var end = 24 * 12 * days;
+
+      var startVal = <%= @start_at.to_i %> * 1000;
+      if (startVal > 0) {
+        start = (startVal - now) / (1000 * 60 * 5);
+      }
+      var endVal = <%= @end_at.to_i %> * 1000;
+      if (endVal > 0) {
+        end = (endVal - now) / (1000 * 60 * 5);
+      }
+
+      $("#slider").noUiSlider({
+      // Create two timestamps to define a range.
+          range: {
+              min: 0,
+              max: 24 * 12 * days
+          },
+
+      // Steps of one week
+          step: 1,
+          connect: true,
+
+      // Two more timestamps indicate the handle starting positions.
+          start: [ start, end ]
+      });
+
+      function updateText() {
+        var val = $("#slider").val();
+        setText("#event-start", val[0]);
+        setText("#event-end", val[1]);
+      }
+
+      function pad(num) {
+        return (num < 10) ? "0" + num : num;
+      }
+
+      var months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+      function setText(selector, val) {
+        var d = timeVal(val);
+        $(selector).html(months[d.getMonth()] + " " + d.getDate() + ", " + pad(d.getHours()) + ":" + pad(d.getMinutes()));
+      }
+
+      function timeVal(val) {
+        return new Date(now + (val * 5) * 60 * 1000);
+      }
+
+      function queryVal(v) {
+        return timeVal(v).toISOString();
+      }
+
+      $("#slider").on("slide", function () {
+        updateText();
+      }).on("set", function () {
+        var val = $("#slider").val();
+        if (val[0] == val[1]) {
+          var url = "queries";
+        } else {
+          b = {start_at: queryVal(val[0]), end_at: queryVal(val[1])}
+          var url = "queries?" + $.param(b);
+        }
+        $("#boom").html("<p class='text-muted' style='padding-bottom: 100px; text-align: center;'>Loading...</p>").load(url);
+        history.pushState(null, null, url);
+      });
+      updateText()
+    </script>
   <% end %>
 
   <% if @query_stats_enabled %>
-    <% if @query_stats.any? %>
-      <%= render partial: "queries_table", locals: {queries: @query_stats} %>
-    <% elsif @error %>
+    <% if @error %>
       <div class="alert alert-danger">Cannot understand start or end time.</div>
+    <% elsif @query_stats.any? %>
+      <div id="boom">
+        <%= render partial: "queries_table", locals: {queries: @query_stats} %>
+      </div>
     <% else %>
       <p>Stats are not available yet. Come back soon!</p>
     <% end %>
