@@ -3,7 +3,7 @@ class <%= migration_class_name %> < ActiveRecord::Migration
     create_table :pghero_query_stats do |t|
       t.text :database
       t.text :query
-      t.float :total_time
+      t.column :total_time, "double precision"
       t.integer :calls, limit: 8
       t.timestamp :captured_at
     end
