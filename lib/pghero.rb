@@ -314,16 +314,17 @@ module PgHero
       historical_query_stats.default = {}
 
       query_stats = []
-      (current_query_stats.keys + historical_query_stats.keys).each do |query|
+      (current_query_stats.keys + historical_query_stats.keys).uniq.each do |query|
         value = {
           "query" => query,
           "total_minutes" => current_query_stats[query]["total_minutes"].to_f + historical_query_stats[query]["total_minutes"].to_f,
           "calls" => current_query_stats[query]["calls"].to_i + historical_query_stats[query]["calls"].to_i
         }
         value["average_time"] = value["total_minutes"] * 1000 * 60 / value["calls"]
+        value["total_percent"] = value["total_minutes"] * 100.0 / (current_query_stats[query]["sum_minutes"].to_f + historical_query_stats[query]["sum_minutes"].to_f)
         query_stats << value
       end
-      query_stats.sort_by { |q| q["total_minutes"] }.first(100)
+      query_stats.sort_by { |q| -q["total_minutes"] }.first(100)
     end
 
     # http://www.craigkerstiens.com/2013/01/10/more-on-postgres-performance/
@@ -349,7 +350,8 @@ module PgHero
             total_minutes,
             average_time,
             calls,
-            total_minutes * 100.0 / (SELECT SUM(total_minutes) FROM query_stats) AS total_percent
+            total_minutes * 100.0 / (SELECT SUM(total_minutes) FROM query_stats) AS total_percent,
+            (SELECT SUM(total_minutes) FROM query_stats) AS sum_minutes
           FROM
             query_stats
           ORDER BY
@@ -443,7 +445,8 @@ module PgHero
             total_minutes,
             average_time,
             calls,
-            total_minutes * 100.0 / (SELECT SUM(total_minutes) FROM query_stats) AS total_percent
+            total_minutes * 100.0 / (SELECT SUM(total_minutes) FROM query_stats) AS total_percent,
+            (SELECT SUM(total_minutes) FROM query_stats) AS sum_minutes
           FROM
             query_stats
           ORDER BY
