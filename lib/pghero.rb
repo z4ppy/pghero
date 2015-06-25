@@ -308,26 +308,22 @@ module PgHero
     end
 
     def query_stats(options = {})
-      if options[:historical]
-        current_query_stats = (options[:end_at] && options[:end_at] < Time.now ? [] : self.current_query_stats(options)).index_by { |q| q["query"] }
-        historical_query_stats = self.historical_query_stats.index_by { |q| q["query"] }
-        current_query_stats.default = Hash.new { |hash, key| hash[key] = {} }
-        historical_query_stats = Hash.new { |hash, key| hash[key] = {} }
+      current_query_stats = (options[:historical] && options[:end_at] && options[:end_at] < Time.now ? [] : self.current_query_stats(options)).index_by { |q| q["query"] }
+      historical_query_stats = (options[:historical] ? self.historical_query_stats : []).index_by { |q| q["query"] }
+      current_query_stats.default = Hash.new { |hash, key| hash[key] = {} }
+      historical_query_stats = Hash.new { |hash, key| hash[key] = {} }
 
-        query_stats = []
-        (current_query_stats.keys + historical_query_stats.keys).each do |query|
-          value = {
-            "query" => query,
-            "total_minutes" => current_query_stats[query]["total_minutes"].to_f + historical_query_stats[query]["total_minutes"].to_f,
-            "calls" => current_query_stats[query]["calls"].to_i + historical_query_stats[query]["calls"].to_i
-          }
-          value["average_time"] = value["total_minutes"] / value["calls"]
-          query_stats << value
-        end
-        query_stats.sort_by { |q| q["total_minutes"] }.first(100)
-      else
-        current_query_stats(options)
+      query_stats = []
+      (current_query_stats.keys + historical_query_stats.keys).each do |query|
+        value = {
+          "query" => query,
+          "total_minutes" => current_query_stats[query]["total_minutes"].to_f + historical_query_stats[query]["total_minutes"].to_f,
+          "calls" => current_query_stats[query]["calls"].to_i + historical_query_stats[query]["calls"].to_i
+        }
+        value["average_time"] = value["total_minutes"] / value["calls"]
+        query_stats << value
       end
+      query_stats.sort_by { |q| q["total_minutes"] }.first(100)
     end
 
     # http://www.craigkerstiens.com/2013/01/10/more-on-postgres-performance/
