@@ -1,5 +1,5 @@
 <div class="content">
-  <% if @query_stats_enabled && !@historical_query_stats_enabled %>
+  <% if @query_stats_enabled %>
     <%= button_to "Reset", reset_query_stats_path, class: "btn btn-danger", style: "float: right;" %>
   <% end %>
 
@@ -33,53 +33,16 @@
       }
     </style>
 
-    <div style="padding: 6px 20px 20px 140px;">
+    <div style="padding: 6px 140px 20px 140px;">
       <div id="slider" style="margin-bottom: 20px;"></div>
       <div id="event-end" style="float: right;"></div>
       <div id="event-start" style="min-height: 20px;"></div>
     </div>
 
     <script>
-      function roundTime(date) {
-        var coeff = 1000 * 60 * 5;
-        return new Date(Math.ceil(date.getTime() / coeff) * coeff)
-      }
-
-      var days = 1;
-      var date = new Date();
-      var now2 = roundTime(date);
-      var now = now2 - days * 24 * 60 * 60 * 1000;
-      var start = 24 * 12 * days;
-      var end = 24 * 12 * days;
-
-      var startVal = <%= @start_at.to_i %> * 1000;
-      if (startVal > 0) {
-        start = (startVal - now) / (1000 * 60 * 5);
-      }
-      var endVal = <%= @end_at.to_i %> * 1000;
-      if (endVal > 0) {
-        end = (endVal - now) / (1000 * 60 * 5);
-      }
-
-      $("#slider").noUiSlider({
-      // Create two timestamps to define a range.
-          range: {
-              min: 0,
-              max: 24 * 12 * days
-          },
-
-      // Steps of one week
-          step: 1,
-          connect: true,
-
-      // Two more timestamps indicate the handle starting positions.
-          start: [ start, end ]
-      });
-
-      function updateText() {
-        var val = $("#slider").val();
-        setText("#event-start", val[0], val[1]);
-        setText("#event-end", val[1], val[0]);
+      function roundTime(time) {
+        var period = 1000 * 60 * 5;
+        return new Date(Math.ceil(time.getTime() / period) * period)
       }
 
       function pad(num) {
@@ -88,53 +51,86 @@
 
       var months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-      function setText(selector, val, val2) {
-        var d = timeVal(val);
-        var o = "";
-        if (d >= date) {
+      var days = 1;
+      var now = new Date();
+      var sliderStartAt = roundTime(now) - days * 24 * 60 * 60 * 1000;
+      var sliderMax = 24 * 12 * days;
+
+      var startAt = <%= @start_at.to_i %>;
+      var min = (startAt > 0) ? (startAt - sliderStartAt) / (1000 * 60 * 5) : 0;
+
+      var endAt = <%= @end_at.to_i %> * 1000;
+      var max = (endAt > 0) ? (endAt - sliderStartAt) / (1000 * 60 * 5) : sliderMax;
+
+      var $slider = $("#slider");
+
+      $slider.noUiSlider({
+        range: {
+          min: 0,
+          max: sliderMax
+        },
+        step: 1,
+        connect: true,
+        start: [min, max]
+      });
+
+      function updateText() {
+        var values = $slider.val();
+        setText("#event-start", values[0]);
+        setText("#event-end", values[1]);
+      }
+
+      function setText(selector, offset) {
+        var time = timeAt(offset);
+
+        var html = "";
+        if (time == now) {
           if (selector == "#event-end") {
-            o = "Now";
+            html = "Now";
           }
         } else {
-          if (d > date) {
-            d = date;
-          }
-          o = months[d.getMonth()] + " " + d.getDate() + ", " + pad(d.getHours()) + ":" + pad(d.getMinutes());
+          html = months[time.getMonth()] + " " + time.getDate() + ", " + pad(time.getHours()) + ":" + pad(time.getMinutes());
         }
-        $(selector).html(o);
+        $(selector).html(html);
       }
 
-      function timeVal(val) {
-        return new Date(now + (val * 5) * 60 * 1000);
+      function timeAt(offset) {
+        var time = new Date(sliderStartAt + (offset * 5) * 60 * 1000);
+        return (time > now) ? now : time;
       }
 
-      function queryVal(v) {
-        return timeVal(v).toISOString();
+      function timeParam(time) {
+        return time.toISOString();
       }
 
-      $("#slider").on("slide", function () {
+      $slider.on("slide", function () {
         updateText();
       }).on("change", function () {
-        var val = $("#slider").val();
-        b = {}
-        if (timeVal(val[0]) > now) {
-          b.start_at = queryVal(val[0])
+        var values = $(this).val();
+        var startAt = timeAt(values[0]);
+        var endAt = timeAt(values[1]);
+
+        var params = {}
+        if (startAt > sliderStartAt) {
+          params.start_at = timeParam(startAt);
         }
-        if (timeVal(val[1]) < date) {
-          b.end_at = queryVal(val[1])
-        }
-        var url = "queries";
-        if (b.start_at || b.end_at) {
-          url = url + "?" + $.param(b);
+        if (endAt < now) {
+          params.end_at = timeParam(endAt);
         }
 
-        $("#boom").html("<tr><td colspan=3><p class='text-muted' style='text-align: center; margin-top: 40px;'>...</p></td></tr>").load(url);
+        var path = "queries";
+        if (params.start_at || params.end_at) {
+          path += "?" + $.param(params);
+        }
+
+        $("#boom").html('<tr><td colspan="3"><p class="text-muted" style="text-align: center; margin-top: 40px;">...</p></td></tr>').load(path);
 
         if (history.pushState) {
-          history.pushState(null, null, url);
+          history.pushState(null, null, path);
         }
       });
-      updateText()
+
+      updateText();
     </script>
   <% end %>
 
