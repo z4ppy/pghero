@@ -1,5 +1,5 @@
 <table class="table">
-  <% unless local_assigns[:headers] == false %>
+  <% if local_assigns[:xhr] %>
     <thead>
       <tr>
         <th style="width: 33.33%;">Total Time</th>
@@ -12,7 +12,13 @@
     <% if queries.empty? %>
       <tr>
         <td colspan="3">
-          <p class="queries-info text-muted">No data available for this time.</p>
+          <p class="queries-info text-muted">
+            <% if local_assigns[:xhr] %>
+              No data available for this time.
+            <% else %>
+              ...
+            <% end %>
+          </p>
         </td>
       </tr>
     <% end %>

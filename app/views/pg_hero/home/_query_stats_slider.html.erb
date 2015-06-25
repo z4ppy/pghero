@@ -96,10 +96,8 @@
     return time.toISOString();
   }
 
-  $slider.on("slide", function () {
-    updateText();
-  }).on("change", function () {
-    var values = $(this).val();
+  function refreshStats(push) {
+    var values = $slider.val();
     var startAt = timeAt(values[0]);
     var endAt = timeAt(values[1]);
 
@@ -118,10 +116,14 @@
 
     $("#queries").html('<tr><td colspan="3"><p class="queries-info text-muted">...</p></td></tr>').load(path);
 
-    if (history.pushState) {
+    if (push && history.pushState) {
       history.pushState(null, null, path);
     }
-  });
+  }
 
+  $slider.on("slide", updateText).on("change", function () {
+    refreshStats(true);
+  });
   updateText();
+  $(refreshStats);
 </script>
