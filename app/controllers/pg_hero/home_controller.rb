@@ -11,7 +11,7 @@ module PgHero
 
     def index
       @title = "Overview"
-      @slow_queries = PgHero.slow_queries
+      @slow_queries = PgHero.slow_queries(historical: true, start_at: 24.hours.ago)
       @long_running_queries = PgHero.long_running_queries
       @index_hit_rate = PgHero.index_hit_rate
       @table_hit_rate = PgHero.table_hit_rate
@@ -49,28 +49,15 @@ module PgHero
       @historical_query_stats_enabled = PgHero.historical_query_stats_enabled?
 
       @query_stats =
-        if @historical_query_stats_enabled
-          begin
-            @start_at = Time.zone.parse(params[:start_at]) if params[:start_at]
-            @start_at ||= 24.hours.ago
+        begin
+          if @historical_query_stats_enabled
+            @start_at = params[:start_at] ? Time.zone.parse(params[:start_at]) : 24.hours.ago
             @end_at = Time.zone.parse(params[:end_at]) if params[:end_at]
-            query_stats =
-              if @start_at > Time.now && !@end_at
-                # temp hack until TODO below
-                PgHero.query_stats
-              else
-                PgHero.historical_query_stats(start_at: @start_at, end_at: @end_at)
-              end
-            if !@end_at || @end_at >= Time.now
-              # TODO combine historical query stats with current query stats
-            end
-            query_stats
-          rescue
-            @error = true
-            []
           end
-        else
-          PgHero.query_stats
+          PgHero.query_stats(historical: true, start_at: @start_at, end_at: @end_at)
+        rescue
+          @error = true
+          []
         end
 
       if request.xhr?

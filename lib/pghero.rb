@@ -307,10 +307,33 @@ module PgHero
       true
     end
 
-    # http://www.craigkerstiens.com/2013/01/10/more-on-postgres-performance/
     def query_stats(options = {})
-      limit = options[:limit] || 100
+      if options[:historical]
+        current_query_stats = (options[:end_at] && options[:end_at] < Time.now ? [] : self.current_query_stats(options)).index_by { |q| q["query"] }
+        historical_query_stats = self.historical_query_stats.index_by { |q| q["query"] }
+        current_query_stats.default = Hash.new { |hash, key| hash[key] = {} }
+        historical_query_stats = Hash.new { |hash, key| hash[key] = {} }
+
+        query_stats = []
+        (current_query_stats.keys + historical_query_stats.keys).each do |query|
+          value = {
+            "query" => query,
+            "total_minutes" => current_query_stats[query]["total_minutes"].to_f + historical_query_stats[query]["total_minutes"].to_f,
+            "calls" => current_query_stats[query]["calls"].to_i + historical_query_stats[query]["calls"].to_i
+          }
+          value["average_time"] = value["total_minutes"] / value["calls"]
+          query_stats << value
+        end
+        query_stats.sort_by { |q| q["total_minutes"] }.first(100)
+      else
+        current_query_stats(options)
+      end
+    end
+
+    # http://www.craigkerstiens.com/2013/01/10/more-on-postgres-performance/
+    def current_query_stats(options = {})
       if query_stats_enabled?
+        limit = options[:limit] || 100
         select_all <<-SQL
           WITH query_stats AS (
             SELECT
@@ -342,40 +365,8 @@ module PgHero
       end
     end
 
-    def slow_queries
-      if query_stats_enabled?
-        select_all <<-SQL
-          WITH query_stats AS (
-            SELECT
-              query,
-              (total_time / 1000 / 60) as total_minutes,
-              (total_time / calls) as average_time,
-              calls
-            FROM
-              pg_stat_statements
-            INNER JOIN
-              pg_database ON pg_database.oid = pg_stat_statements.dbid
-            WHERE
-              pg_database.datname = current_database()
-          )
-          SELECT
-            query,
-            total_minutes,
-            average_time,
-            calls,
-            total_minutes * 100.0 / (SELECT SUM(total_minutes) FROM query_stats) AS total_percent
-          FROM
-            query_stats
-          WHERE
-            calls >= #{slow_query_calls.to_i}
-            AND average_time >= #{slow_query_ms.to_i}
-          ORDER BY
-            total_minutes DESC
-          LIMIT 100
-        SQL
-      else
-        []
-      end
+    def slow_queries(options = {})
+      query_stats(options).select { |q| q["calls"].to_i >= slow_query_calls.to_i && q["average_time"].to_i >= slow_query_ms.to_i }
     end
 
     def query_stats_available?
