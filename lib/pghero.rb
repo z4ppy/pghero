@@ -320,7 +320,7 @@ module PgHero
           "total_minutes" => current_query_stats[query]["total_minutes"].to_f + historical_query_stats[query]["total_minutes"].to_f,
           "calls" => current_query_stats[query]["calls"].to_i + historical_query_stats[query]["calls"].to_i
         }
-        value["average_time"] = value["total_minutes"] / value["calls"]
+        value["average_time"] = value["total_minutes"] * 1000 * 60 / value["calls"]
         query_stats << value
       end
       query_stats.sort_by { |q| q["total_minutes"] }.first(100)
