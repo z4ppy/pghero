@@ -1,5 +1,5 @@
 <table class="table">
-  <% if local_assigns[:xhr] %>
+  <% unless local_assigns[:xhr] %>
     <thead>
       <tr>
         <th style="width: 33.33%;">Total Time</th>
