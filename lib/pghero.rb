@@ -307,11 +307,11 @@ module PgHero
       true
     end
 
-    def query_stats(options = {})
-      current_query_stats = (options[:historical] && options[:end_at] && options[:end_at] < Time.now ? [] : self.current_query_stats(options)).index_by { |q| q["query"] }
-      historical_query_stats = (options[:historical] ? self.historical_query_stats : []).index_by { |q| q["query"] }
-      current_query_stats.default = Hash.new { |hash, key| hash[key] = {} }
-      historical_query_stats = Hash.new { |hash, key| hash[key] = {} }
+    def combined_query_stats(options = {})
+      current_query_stats = (options[:end_at] && options[:end_at] < Time.now ? [] : self.query_stats(options)).index_by { |q| q["query"] }
+      historical_query_stats = self.historical_query_stats(options).index_by { |q| q["query"] }
+      current_query_stats.default = {}
+      historical_query_stats.default = {}
 
       query_stats = []
       (current_query_stats.keys + historical_query_stats.keys).each do |query|
@@ -327,7 +327,7 @@ module PgHero
     end
 
     # http://www.craigkerstiens.com/2013/01/10/more-on-postgres-performance/
-    def current_query_stats(options = {})
+    def query_stats(options = {})
       if query_stats_enabled?
         limit = options[:limit] || 100
         select_all <<-SQL
@@ -421,34 +421,38 @@ module PgHero
     end
 
     def historical_query_stats(options = {})
-      stats_connection.select_all squish <<-SQL
-        WITH query_stats AS (
+      if historical_query_stats_enabled?
+        stats_connection.select_all squish <<-SQL
+          WITH query_stats AS (
+            SELECT
+              query,
+              (SUM(total_time) / 1000 / 60) as total_minutes,
+              (SUM(total_time) / SUM(calls)) as average_time,
+              SUM(calls) as calls
+            FROM
+              pghero_query_stats
+            WHERE
+              database = #{quote(current_database)}
+              #{options[:start_at] ? "AND captured_at >= #{quote(options[:start_at])}" : ""}
+              #{options[:end_at] ? "AND captured_at <= #{quote(options[:end_at])}" : ""}
+            GROUP BY
+              query
+          )
           SELECT
             query,
-            (SUM(total_time) / 1000 / 60) as total_minutes,
-            (SUM(total_time) / SUM(calls)) as average_time,
-            SUM(calls) as calls
+            total_minutes,
+            average_time,
+            calls,
+            total_minutes * 100.0 / (SELECT SUM(total_minutes) FROM query_stats) AS total_percent
           FROM
-            pghero_query_stats
-          WHERE
-            database = #{quote(current_database)}
-            #{options[:start_at] ? "AND captured_at >= #{quote(options[:start_at])}" : ""}
-            #{options[:end_at] ? "AND captured_at <= #{quote(options[:end_at])}" : ""}
-          GROUP BY
-            query
-        )
-        SELECT
-          query,
-          total_minutes,
-          average_time,
-          calls,
-          total_minutes * 100.0 / (SELECT SUM(total_minutes) FROM query_stats) AS total_percent
-        FROM
-          query_stats
-        ORDER BY
-          total_minutes DESC
-        LIMIT 100
-      SQL
+            query_stats
+          ORDER BY
+            total_minutes DESC
+          LIMIT 100
+        SQL
+      else
+        []
+      end
     end
 
     # http://stackoverflow.com/questions/20582500/how-to-check-if-a-table-exists-in-a-given-schema
