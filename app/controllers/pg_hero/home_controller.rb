@@ -54,7 +54,7 @@ module PgHero
             @start_at = params[:start_at] ? Time.zone.parse(params[:start_at]) : 24.hours.ago
             @end_at = Time.zone.parse(params[:end_at]) if params[:end_at]
           end
-          PgHero.combined_query_stats(start_at: @start_at, end_at: @end_at)
+          PgHero.query_stats(historical: true, start_at: @start_at, end_at: @end_at)
         rescue
           @error = true
           []

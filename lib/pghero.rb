@@ -307,9 +307,9 @@ module PgHero
       true
     end
 
-    def combined_query_stats(options = {})
-      current_query_stats = (options[:end_at] && options[:end_at] < Time.now ? [] : self.query_stats(options)).index_by { |q| q["query"] }
-      historical_query_stats = self.historical_query_stats(options).index_by { |q| q["query"] }
+    def query_stats(options = {})
+      current_query_stats = (options[:historical] && options[:end_at] && options[:end_at] < Time.now ? [] : self.current_query_stats(options)).index_by { |q| q["query"] }
+      historical_query_stats = (options[:historical] ? self.historical_query_stats(options) : []).index_by { |q| q["query"] }
       current_query_stats.default = {}
       historical_query_stats.default = {}
 
@@ -327,7 +327,7 @@ module PgHero
     end
 
     # http://www.craigkerstiens.com/2013/01/10/more-on-postgres-performance/
-    def query_stats(options = {})
+    def current_query_stats(options = {})
       if query_stats_enabled?
         limit = options[:limit] || 100
         select_all <<-SQL
