@@ -33,10 +33,10 @@
       }
     </style>
 
-    <div style="padding: 6px 140px 20px 140px;">
-      <div id="slider" style="margin-bottom: 20px;"></div>
-      <div id="event-end" style="float: right;"></div>
-      <div id="event-start" style="min-height: 20px;"></div>
+    <div id="slider-container">
+      <div id="slider"></div>
+      <div id="range-end"></div>
+      <div id="range-start"></div>
     </div>
 
     <script>
@@ -76,8 +76,8 @@
 
       function updateText() {
         var values = $slider.val();
-        setText("#event-start", values[0]);
-        setText("#event-end", values[1]);
+        setText("#range-start", values[0]);
+        setText("#range-end", values[1]);
       }
 
       function setText(selector, offset) {
@@ -85,7 +85,7 @@
 
         var html = "";
         if (time == now) {
-          if (selector == "#event-end") {
+          if (selector == "#range-end") {
             html = "Now";
           }
         } else {
