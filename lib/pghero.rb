@@ -322,7 +322,7 @@ module PgHero
           "calls" => current_query_stats[query]["calls"].to_i + historical_query_stats[query]["calls"].to_i
         }
         value["average_time"] = value["total_minutes"] * 1000 * 60 / value["calls"]
-        value["total_percent"] = value["total_minutes"] * 100.0 / (current_query_stats[query]["sum_minutes"].to_f + historical_query_stats[query]["sum_minutes"].to_f)
+        value["total_percent"] = value["total_minutes"] * 100.0 / (current_query_stats[query]["all_queries_total_minutes"].to_f + historical_query_stats[query]["all_queries_total_minutes"].to_f)
         query_stats << value
       end
       query_stats.sort_by { |q| -q["total_minutes"] }.first(100)
@@ -352,7 +352,7 @@ module PgHero
             average_time,
             calls,
             total_minutes * 100.0 / (SELECT SUM(total_minutes) FROM query_stats) AS total_percent,
-            (SELECT SUM(total_minutes) FROM query_stats) AS sum_minutes
+            (SELECT SUM(total_minutes) FROM query_stats) AS all_queries_total_minutes
           FROM
             query_stats
           ORDER BY
@@ -447,7 +447,7 @@ module PgHero
             average_time,
             calls,
             total_minutes * 100.0 / (SELECT SUM(total_minutes) FROM query_stats) AS total_percent,
-            (SELECT SUM(total_minutes) FROM query_stats) AS sum_minutes
+            (SELECT SUM(total_minutes) FROM query_stats) AS all_queries_total_minutes
           FROM
             query_stats
           ORDER BY
