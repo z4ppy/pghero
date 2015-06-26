@@ -133,7 +133,7 @@ And schedule the task below to run every 5 minutes.
 rake pghero:capture_query_stats # or PgHero.capture_query_stats
 ```
 
-After this, a time range selector will appear on the Queries tab.
+After this, a time range slider will appear on the Queries tab.
 
 By default, historical query stats are stored in your primary database. Change this with:
 
