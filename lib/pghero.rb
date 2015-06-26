@@ -40,7 +40,7 @@ module PgHero
           {
             "databases" => {
               "primary" => {
-                "url" => ENV["PGHERO_DATABASE_URL"], # nil reverts to default config
+                "url" => ENV["PGHERO_DATABASE_URL"] || ActiveRecord::Base.connection_config,
                 "db_instance_identifier" => ENV["PGHERO_DB_INSTANCE_IDENTIFIER"]
               }
             }
@@ -650,6 +650,8 @@ module PgHero
     def replication_lag
       select_all("SELECT EXTRACT(EPOCH FROM NOW() - pg_last_xact_replay_timestamp()) AS replication_lag").first["replication_lag"].to_f
     end
+
+    private
 
     def friendly_value(setting, unit)
       if %w(kB 8kB).include?(unit)
