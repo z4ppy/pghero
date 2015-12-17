@@ -17,13 +17,14 @@ module PgHero
   end
 
   class << self
-    attr_accessor :long_running_query_sec, :slow_query_ms, :slow_query_calls, :total_connections_threshold, :env
+    attr_accessor :long_running_query_sec, :slow_query_ms, :slow_query_calls, :total_connections_threshold, :cache_hit_rate_threshold, :env
     attr_writer :time_zone
   end
   self.long_running_query_sec = (ENV["PGHERO_LONG_RUNNING_QUERY_SEC"] || 60).to_i
   self.slow_query_ms = (ENV["PGHERO_SLOW_QUERY_MS"] || 20).to_i
   self.slow_query_calls = (ENV["PGHERO_SLOW_QUERY_CALLS"] || 100).to_i
   self.total_connections_threshold = (ENV["PGHERO_TOTAL_CONNECTIONS_THRESHOLD"] || 100).to_i
+  self.cache_hit_rate_threshold = 99
   self.env = ENV["RAILS_ENV"] || ENV["RACK_ENV"] || "development"
 
   class << self
@@ -170,6 +171,39 @@ module PgHero
           pg_statio_user_tables
       SQL
       ).first["rate"].to_f
+    end
+
+    def table_caching
+      select_all <<-SQL
+        SELECT
+          relname AS table,
+          CASE WHEN heap_blks_hit + heap_blks_read = 0 THEN
+            0
+          ELSE
+            ROUND(1.0 * heap_blks_hit / (heap_blks_hit + heap_blks_read), 2)
+          END AS hit_rate
+        FROM
+          pg_statio_user_tables
+        ORDER BY
+          2 DESC, 1
+      SQL
+    end
+
+    def index_caching
+      select_all <<-SQL
+        SELECT
+          indexrelname AS index,
+          relname AS table,
+          CASE WHEN idx_blks_hit + idx_blks_read = 0 THEN
+            0
+          ELSE
+            ROUND(1.0 * idx_blks_hit / (idx_blks_hit + idx_blks_read), 2)
+          END AS hit_rate
+        FROM
+          pg_statio_user_indexes
+        ORDER BY
+          3 DESC, 1
+      SQL
     end
 
     def index_usage

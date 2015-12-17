@@ -1,3 +1,10 @@
+## 1.1.5 [unreleased]
+
+- Added maintenance tab
+- Added `table_caching` and `index_caching` methods
+- Added configurable cache hit rate threshold
+- Show all connections in connections tab
+
 ## 1.1.4
 
 - Added check for transaction ID wraparound failure
