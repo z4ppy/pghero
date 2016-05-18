@@ -100,6 +100,7 @@ module PgHero
 
     def system
       @title = "System"
+      @chartjs = Gem::Version.new(Chartkick::VERSION) >= Gem::Version.new("1.5.0")
     end
 
     def cpu_usage
