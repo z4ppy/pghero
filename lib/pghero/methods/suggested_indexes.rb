@@ -118,6 +118,7 @@ module PgHero
             index[:rows] = total_rows
 
             ranks = Hash[col_stats[table].to_a.map { |r| [r["column"], r] }]
+            puts statement
             columns = (where + sort).map { |c| c[:column] }.uniq
 
             if columns.any?
