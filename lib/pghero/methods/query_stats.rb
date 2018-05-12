@@ -72,7 +72,7 @@ module PgHero
       end
 
       def query_stats_table_exists?
-        table_exists?("pghero_query_stats")
+        table_exists?("public.pghero_query_stats")
       end
 
       def missing_query_stats_columns
@@ -123,7 +123,7 @@ module PgHero
                 end
 
               columns = %w[database query total_time calls captured_at query_hash user]
-              insert_stats("pghero_query_stats", columns, values)
+              insert_stats("public.pghero_query_stats", columns, values)
             end
           end
         end
@@ -145,7 +145,7 @@ module PgHero
               calls,
               (SELECT regexp_matches(query, '/\\*(.+)\\*/'))[1] AS origin
             FROM
-              pghero_query_stats
+              public.pghero_query_stats
             WHERE
               database = #{quote(id)}
               AND captured_at >= #{quote(start_at)}
@@ -218,7 +218,7 @@ module PgHero
                 (SUM(total_time) / SUM(calls)) AS average_time,
                 SUM(calls) AS calls
               FROM
-                pghero_query_stats
+                public.pghero_query_stats
               WHERE
                 database = #{quote(id)}
                 #{supports_query_hash? ? "AND query_hash IS NOT NULL" : ""}
