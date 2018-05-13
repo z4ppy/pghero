@@ -59,7 +59,7 @@ module PgHero
                 relation,
                 array_agg(size ORDER BY captured_at) AS sizes
               FROM
-                pghero_space_stats
+                public.pghero_space_stats
               WHERE
                 database = #{quote(id)}
                 AND captured_at >= #{quote(start_at)}
@@ -100,7 +100,7 @@ module PgHero
               captured_at,
               size AS size_bytes
             FROM
-              pghero_space_stats
+              public.pghero_space_stats
             WHERE
               database = #{quote(id)}
               AND captured_at >= #{quote(start_at)}
@@ -126,11 +126,11 @@ module PgHero
         relation_sizes.each do |rs|
           values << [id, rs[:schema], rs[:relation], rs[:size_bytes].to_i, now]
         end
-        insert_stats("pghero_space_stats", columns, values) if values.any?
+        insert_stats("public.pghero_space_stats", columns, values) if values.any?
       end
 
       def space_stats_enabled?
-        table_exists?("pghero_space_stats")
+        table_exists?("public.pghero_space_stats")
       end
     end
   end

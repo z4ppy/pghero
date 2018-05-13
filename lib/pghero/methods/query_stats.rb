@@ -72,7 +72,8 @@ module PgHero
       end
 
       def query_stats_table_exists?
-        table_exists?("public.pghero_query_stats")
+        return true
+        #table_exists?("public.pghero_query_stats")
       end
 
       def missing_query_stats_columns
